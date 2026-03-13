@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         CCEE Extrator de Relatórios (Refinado Final - V1.1.1)
+// @name         CCEE Extrator de Relatórios (Semi-automático)
 // @namespace    http://tampermonkey.net/
 // @version      1.1.1
 // @description  Extração automática CCEE com trava de disparo único para evitar abas duplas

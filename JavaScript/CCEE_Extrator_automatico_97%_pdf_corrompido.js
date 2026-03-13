@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         CCEE Extrator de Relatórios (Refinado Final)
+// @name         CCEE Extrator de Relatórios (100% automatico)
 // @namespace    http://tampermonkey.net/
 // @version      1.0.5
 // @description  Extração automática CCEE com correção de nomes, abas únicas e pausa imediata
@@ -7,6 +7,7 @@
 // @match        https://operacao.ccee.org.br/*
 // @grant        GM_setValue
 // @grant        GM_getValue
+// @grant        GM_download
 // @run-at       document-start
 // ==/UserScript==
 
@@ -41,35 +42,26 @@
 
       // Formata nome: substitui espaços e caracteres especiais por sublinhado (_)
       const formatarNome = (s) => s.replace(/[\s\\/:*?"<>|]/g, '_').replace(/_+/g, '_');
-      
+
       const nomeArquivo = empresa
         ? `${formatarNome(empresa)}_${formatarNome(relatorio)}_${mes}_${ano}.pdf`
         : `${formatarNome(itemName)}_${mes}_${ano}.pdf`;
 
-      try {
-        const resp = await fetch(window.location.href, { credentials: 'include' });
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-
-        const blob    = await resp.blob();
-        const blobUrl = URL.createObjectURL(blob);
-
-        const a = document.createElement('a');
-        a.href     = blobUrl;
-        a.download = nomeArquivo;
-        document.body.appendChild(a);
-        a.click();
-        URL.revokeObjectURL(blobUrl);
-
-        GM_setValue('ccee_download_ok', nomeArquivo);
-        GM_setValue('ccee_download_ts', String(Date.now()));
-
-        setTimeout(() => window.close(), 2500);
-
-      } catch (err) {
-        console.error('[CCEE AutoDL] Erro:', err);
-        GM_setValue('ccee_download_ok', '__ERRO__');
-        GM_setValue('ccee_download_ts', String(Date.now()));
-      }
+      GM_download({
+        url: window.location.href,
+        name: nomeArquivo,
+        saveAs: false, // false = baixa direto sem abrir a janela "Salvar como"
+        onload: () => {
+          GM_setValue('ccee_download_ok', nomeArquivo);
+          GM_setValue('ccee_download_ts', String(Date.now()));
+          setTimeout(() => window.close(), 1500); // Fecha a aba após o download
+        },
+        onerror: (err) => {
+          console.error('[CCEE AutoDL] Erro GM_download:', err);
+          GM_setValue('ccee_download_ok', '__ERRO__');
+          GM_setValue('ccee_download_ts', String(Date.now()));
+        }
+      });
     });
     return;
   }
@@ -135,14 +127,20 @@
     return findInFrames(doc => xpathFirst(xpath, doc));
   }
 
+  let lastClickTime = 0;
   function clickOracleBI(el) {
     if (!el) return false;
+    
+    // Trava de 2.5 segundos para evitar abas duplas
+    const now = Date.now();
+    if (now - lastClickTime < 2500) return false; 
+    lastClickTime = now;
+
     try {
       el.scrollIntoView({ block: 'center', inline: 'nearest' });
       el.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
       el.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
-      el.click();
-      el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      el.click(); // Mantemos apenas 1 disparo de clique!
       return true;
     } catch (e) {
       return false;
@@ -202,7 +200,7 @@
   // ════════════════════════════════════════════════════════════════
   async function processarEmpresa(empresa) {
     if (estado === 'stopped') return false;
-    
+
     uiLog(`▶ <b>${empresa}</b>`);
     uiStatus(`Processando: ${empresa}`);
 
@@ -308,6 +306,9 @@
       }
       return null;
     }, 50000, 1000);
+
+    // CORREÇÃO: LIBERA A TRAVA PARA A PRÓXIMA EMPRESA
+    window.__pdfLock = false;
 
     if (!resultado || estado === 'stopped') {
       uiLog(`  ⚠ Timeout ou parado.`, 'warn');
