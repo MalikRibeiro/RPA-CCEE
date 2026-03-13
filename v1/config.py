@@ -2,7 +2,7 @@
 
 MES = "jan"
 ANO = "26"
-NOME_RELATORIO = "BEG001"
+NOME_RELATORIO = "RCAP002"
 
 # -- PASTA DE DOWNLOAD (CAMINHO FIXO) --
 PASTA_DOWNLOAD = r"C:\Users\malik.mourad\Downloads"
@@ -29,21 +29,21 @@ ELEMENTOS_VALIDACAO = [
     "//*[contains(@id, 'saw_')]",  # IDs típicos do Oracle BI
     "//div[contains(@class, 'ResultsContainer')]"  # Container de resultados
 ]
-
+"""
 # -- LISTA DE EMPRESAS --
 empresas_alvo = [
-    # "ADESI CL 514",
-    # "AMERICAS CL 514",
-    # "AOI YAMA CL 514",
-    # "APOLO TUBULARS",
-    # "APUCARANINHA",
-    # "ARBHORES COMPENSADOS CL 514",
-    # "AURORA MATRIZ",
-    # "BAIA VERDE",
-    # "CAVERNOSO I",
-    # "CAVERNOSO II",
-    # "C VALE COOP AGROINDUSTRIAL",
-    # "C VALE ENERGIA",
+    "ADESI CL 514",
+    "AMERICAS CL 514",
+    "AOI YAMA CL 514",
+    "APOLO TUBULARS",
+    "APUCARANINHA",
+    "ARBHORES COMPENSADOS CL 514",
+    "AURORA MATRIZ",
+    "BAIA VERDE",
+    "CAVERNOSO I",
+    "CAVERNOSO II",
+    "C VALE COOP AGROINDUSTRIAL",
+    "C VALE ENERGIA",
     "CERMISSOES",
     "CERT",
     "CERTAJA",
@@ -134,4 +134,3 @@ empresas_alvo = [
     "VIDROLAR CL 514",
     "ZAELI CL 514",
 ]
-"""
