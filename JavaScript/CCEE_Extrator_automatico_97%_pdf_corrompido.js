@@ -289,6 +289,10 @@
       return false;
     }
 
+    // TRAVA DE DISPARO ÚNICO REFORÇADA
+    if (window.__pdfLock) return false;
+    window.__pdfLock = true;
+
     // TRAVA: Clica apenas UMA vez e aguarda o sinal de download
     clickOracleBI(elPDF);
     uiLog(`  [6/7] PDF clicado ✓`);
