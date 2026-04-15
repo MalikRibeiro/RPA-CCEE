@@ -1,8 +1,8 @@
 # -- CONFIGURAÇÕES DO RELATÓRIO --
 
-MES = "jan"
+MES = "fev"
 ANO = "26"
-NOME_RELATORIO = "RCAP002"
+NOME_RELATORIO = "BEG001"
 
 # -- PASTA DE DOWNLOAD (CAMINHO FIXO) --
 PASTA_DOWNLOAD = r"C:\Users\malik.mourad\Downloads"
@@ -29,7 +29,7 @@ ELEMENTOS_VALIDACAO = [
     "//*[contains(@id, 'saw_')]",  # IDs típicos do Oracle BI
     "//div[contains(@class, 'ResultsContainer')]"  # Container de resultados
 ]
-"""
+
 # -- LISTA DE EMPRESAS --
 empresas_alvo = [
     "ADESI CL 514",
@@ -134,3 +134,4 @@ empresas_alvo = [
     "VIDROLAR CL 514",
     "ZAELI CL 514",
 ]
+"""

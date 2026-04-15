@@ -14,7 +14,7 @@
 (() => {
   'use strict';
 
-  // ════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════
   //  BLOCO 1 — PDF AUTO-DOWNLOAD (roda na aba saw.dll)
   // ════════════════════════════════════════════════════════════════
   if (
@@ -24,44 +24,45 @@
     if (window.__cceeDownloader) return;
     window.__cceeDownloader = true;
 
-    window.addEventListener('load', async () => {
-      // Aguarda o PDF carregar visualmente (evita arquivo corrompido)
-      await new Promise(r => setTimeout(r, 3500));
+    // TRUQUE NINJA: Para imediatamente o carregamento nativo da aba!
+    // Isso impede que o navegador "queime" o token de uso único da CCEE.
+    window.stop();
 
-      const params = new URLSearchParams(window.location.search);
-      const itemName = decodeURIComponent(params.get('ItemName') || 'relatorio');
+    const params = new URLSearchParams(window.location.search);
+    const itemName = decodeURIComponent(params.get('ItemName') || 'relatorio');
 
-      let empresa = '';
-      let cfg = {};
-      try { empresa = GM_getValue('ccee_empresa_atual', ''); } catch {}
-      try { cfg = JSON.parse(GM_getValue('ccee_config', '{}')); } catch {}
+    let empresa = '';
+    let cfg = {};
+    try { empresa = GM_getValue('ccee_empresa_atual', ''); } catch {}
+    try { cfg = JSON.parse(GM_getValue('ccee_config', '{}')); } catch {}
 
-      const mes       = cfg.mes       || 'xxx';
-      const ano       = cfg.ano       || 'xx';
-      const relatorio = cfg.relatorio || itemName.split(' ')[0];
+    const mes       = cfg.mes       || 'xxx';
+    const ano       = cfg.ano       || 'xx';
+    const relatorio = cfg.relatorio || itemName.split(' ')[0];
 
-      // Formata nome: substitui espaços e caracteres especiais por sublinhado (_)
-      const formatarNome = (s) => s.replace(/[\s\\/:*?"<>|]/g, '_').replace(/_+/g, '_');
+    // Formata nome
+    const formatarNome = (s) => s.replace(/[\s\\/:*?"<>|]/g, '_').replace(/_+/g, '_');
+    const nomeArquivo = empresa
+      ? `${formatarNome(empresa)}_${formatarNome(relatorio)}_${mes}_${ano}.pdf`
+      : `${formatarNome(itemName)}_${mes}_${ano}.pdf`;
 
-      const nomeArquivo = empresa
-        ? `${formatarNome(empresa)}_${formatarNome(relatorio)}_${mes}_${ano}.pdf`
-        : `${formatarNome(itemName)}_${mes}_${ano}.pdf`;
-
-      GM_download({
-        url: window.location.href,
-        name: nomeArquivo,
-        saveAs: false, // false = baixa direto sem abrir a janela "Salvar como"
-        onload: () => {
-          GM_setValue('ccee_download_ok', nomeArquivo);
-          GM_setValue('ccee_download_ts', String(Date.now()));
-          setTimeout(() => window.close(), 1500); // Fecha a aba após o download
-        },
-        onerror: (err) => {
-          console.error('[CCEE AutoDL] Erro GM_download:', err);
-          GM_setValue('ccee_download_ok', '__ERRO__');
-          GM_setValue('ccee_download_ts', String(Date.now()));
-        }
-      });
+    // Baixa o arquivo silenciosamente
+    GM_download({
+      url: window.location.href,
+      name: nomeArquivo,
+      saveAs: false,
+      onload: () => {
+        GM_setValue('ccee_download_ok', nomeArquivo);
+        GM_setValue('ccee_download_ts', String(Date.now()));
+        setTimeout(() => window.close(), 1500); // Fecha se der certo
+      },
+      onerror: (err) => {
+        const motivo = err.error || err.details || 'Desconhecido';
+        console.error('[CCEE AutoDL] Erro GM_download:', err);
+        GM_setValue('ccee_download_ok', `__ERRO__:${motivo}`);
+        GM_setValue('ccee_download_ts', String(Date.now()));
+        setTimeout(() => window.close(), 1500);
+      }
     });
     return;
   }
@@ -131,16 +132,15 @@
   function clickOracleBI(el) {
     if (!el) return false;
     
-    // Trava de 2.5 segundos para evitar abas duplas
-    const now = Date.now();
-    if (now - lastClickTime < 2500) return false; 
-    lastClickTime = now;
-
+    // Removemos a trava de 2.5s daqui porque ela estava bloqueando a seleção da empresa.
+    // O duplo clique no PDF já está protegido pelo window.__pdfLock lá embaixo!
     try {
       el.scrollIntoView({ block: 'center', inline: 'nearest' });
+      // Restaurando os eventos nativos que o Oracle BI EXIGE para funcionar
+      el.dispatchEvent(new MouseEvent('mouseover', { bubbles: true, cancelable: true }));
       el.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
       el.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
-      el.click(); // Mantemos apenas 1 disparo de clique!
+      el.click(); 
       return true;
     } catch (e) {
       return false;
@@ -312,11 +312,15 @@
 
     if (!resultado || estado === 'stopped') {
       uiLog(`  ⚠ Timeout ou parado.`, 'warn');
-      return true;
+      return false; // Mudei para false para contabilizar como falha
     }
-    if (resultado === '__ERRO__') {
-      uiLog(`  ✗ Erro no download`, 'err');
-      return false;
+    
+    // Verifica se a string que voltou começa com __ERRO__
+    if (resultado.startsWith('__ERRO__')) {
+      // Pega o texto que vem depois dos dois pontos
+      const motivoErro = resultado.split(':')[1] || 'Token bloqueado';
+      uiLog(`  ✗ Falha no Download: <b>${motivoErro}</b>`, 'err');
+      return false; // Mudei para false para contabilizar como falha
     }
 
     uiLog(`  ✓ Salvo: <i style="color:#888">${resultado}</i>`, 'ok');
